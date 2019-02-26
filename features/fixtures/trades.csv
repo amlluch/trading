@@ -1,0 +1,7 @@
+symbol,op,quantity,price,timestamp
+ TEA   , buy       ,250,  235.0 ,      -3.5 
+ TEA   , sell      ,125,  234.5 ,      -1.7 
+ GIN   , sell      ,101,  189.0 ,      -2.3 
+ JOE   , sell      ,1325,  199.0 ,      -6.4 
+ GIN   , buy       ,1897,  187.0 ,-4
+ MIL   , sell      ,1200,  188.0 ,-2

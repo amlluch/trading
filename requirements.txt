@@ -1,0 +1,6 @@
+behave >= 1.2.6
+invoke >= 1.2.0
+numpy >= 1.16.1
+parse >= 1.11.1
+parse-type >= 0.4.2
+scipy >= 1.2.1
