@@ -201,7 +201,7 @@ class Trading():    # A list of trades all together
         def add_filter_list(inst, *args, **kwargs):                 # If don't, creates it from the trading list
             if inst.filter_list is None:                            # in this case inst = self
                 inst.filter_list = inst.trading_list.copy()
-            for key in kwargs:      # checks ke arguments for filters
+            for key in kwargs:                                      # checks key arguments for filters
                 if not hasattr(inst.filter_list[0], key):
                     raise Exception('{} attribute doesn\'t exist'.format(key))
             result = func(inst, *args, **kwargs)

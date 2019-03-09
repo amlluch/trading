@@ -91,11 +91,15 @@ class TestTrading(unittest.TestCase):
 
         time_before = datetime.utcnow() - timedelta(minutes=2)
 
-        filtered_trading = self.trading.before(time_before).to_list()
+        filtered_trading = self.trading.before(time_before).order_by('symbol').to_list()
         self.assertEqual(len(filtered_trading), 5)
+        self.assertEqual(filtered_trading[0].symbol, 'GIN')
+        new_ordered = Trading(filtered_trading).order_by('-timestamp').to_list()
+        self.assertEqual(new_ordered[0].symbol, 'MIL')
 
         filtered_trading = self.trading.after(time_before).order_by('-timestamp').to_list()
         self.assertEqual(len(filtered_trading), 1)
+        self.assertEqual(filtered_trading[0].symbol, 'TEA')
 
         filtered_trading = self.trading.exclude(symbol='TEA').after(time_before).order_by('timestamp').to_list()
         self.assertEqual(len(filtered_trading), 0)
