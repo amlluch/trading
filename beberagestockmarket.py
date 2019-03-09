@@ -131,8 +131,8 @@ class Trading():    # A list of trades all together
 
     Operation:
 
-        add_trade: add a trade to the trading. Must receive a trade element
-        add_tradelist: add a list of trades to trading
+        _add_trade: add a trade to the trading. Must receive a trade element (Trading += Trade)
+        _add_tradelist: add a list of trades to trading  (Trading += list_of_trades)
         filter: gets a list of trades filtered by criteria
             examples:
                 trading.filter().to_list() : will return a list with all trades inside the trading
@@ -141,6 +141,9 @@ class Trading():    # A list of trades all together
         exclude: as filter but excluding by criteria
         before: gets all trades before a time
         after: gets all trades after a time
+        order_by: order the trading list by any field. Start the field name by '-' for reverse ordering
+        to_list: returns filtered trade as a list or the whole trading as a list (list of Trade types)
+        first: returns first trade from the trading list or filtered list (Trade type)
         get_symbols: gets all different stock symbols
         weighted_price: calculates the Volume Weighted Stock Price for a given symbol
         geometric_mean:  geometric mean for whole trading
@@ -149,6 +152,10 @@ class Trading():    # A list of trades all together
 
         trading.filter(symbol='POP').exclude(op='sell').before(datetime.now()).after(datetime.now-timedelta(minutes=5).to_list()
 
+        You can add Tradings. You can add a Trade, a list of trades or a Trading object
+            new_trading = Trading(list_of_trades) + Trade(single_trade_params)
+            new_trading = Trading(list_of_trades) + list_of_trades
+            new_trading = Trading(list_of_trades) + Trading(list_of_trades)
 
 
     """
@@ -162,47 +169,91 @@ class Trading():    # A list of trades all together
             self.trading_list += trading_list
         self.filter_list = None
 
-    def add_trade(self, trade):     # for adding a trade to the trading
+    def __add__(self, other):
+        trading_list = self.trading_list.copy()
+        trading = Trading(trading_list)
+        if type(other) == Trade:
+            trading._add_trade(other)
+        elif type(other) == list:
+            trading._add_tradelist(other)
+        elif type(other) == Trading:
+            trading._add_tradelist(other.to_list())
+        else:
+            raise Exception('Object must be Trade, a Trading or a list of Trade objects')
+
+        return trading
+
+    def __radd__(self, other):
+        return self + other
+
+    def _add_trade(self, trade):     # for adding a trade to the trading
         if type(trade) != Trade:
             raise Exception('Must be a Trade object')
         self.trading_list.append(trade)
 
-    def add_tradelist(self, trades):
+    def _add_tradelist(self, trades):
         for trade in trades:
             if type(trade) != Trade:
                 raise Exception('All objects should be Trade type')
         self.trading_list.extend(trades)
 
+    def _tradingfilter(func):                                       # This decorator checks if exists a filter list.
+        def add_filter_list(inst, *args, **kwargs):                 # If don't, creates it from the trading list
+            if inst.filter_list is None:                            # in this case inst = self
+                inst.filter_list = inst.trading_list.copy()
+            result = func(inst, *args, **kwargs)
+            return result
+        return add_filter_list
+
+    @_tradingfilter
     def filter(self, **kwargs):                     # you can get all trades just passing NO parameters
-        if not self.filter_list:
-            self.filter_list = self.trading_list.copy()      # or filter by any trade attribute or a group of attributes
-        for key, value in kwargs.items():
+        for key, value in kwargs.items():           # or filter by any trade attribute or a group of attributes
             self.filter_list = [x for x in self.filter_list if getattr(x, key) == value]
         return self
 
+    @_tradingfilter
     def exclude(self, **kwargs):
-        if not self.filter_list:
-            self.filter_list = self.trading_list.copy()
         for key, value in kwargs.items():
             self.filter_list = [x for x in self.filter_list if getattr(x, key) != value]
         return self
 
+    @_tradingfilter
     def before(self, time):     # all trades BEFORE a time. Needs to_list()
-        if not self.filter_list:
-            self.filter_list = self.trading_list.copy()
         self.filter_list = [x for x in self.filter_list if x.timestamp <= time]
         return self
 
+    @_tradingfilter
     def after(self, time):      # all trades AFTER a time. Needs to_list()
-        if not self.filter_list:
-            self.filter_list = self.trading_list.copy()
         self.filter_list = [x for x in self.filter_list if x.timestamp >= time]
         return self
 
-    def to_list(self):          # Return the filtered list of trades
+    @_tradingfilter
+    def order_by(self, field=None):
+        if not self.filter_list:
+            raise Exception('Can\'t order None type')
+        if not field:
+            field = 'timestamp'    # Order by timestamp by default
+        if field[0:1] == '-':
+            reverse = True          # Start the field by '-' for reverse sorting
+            field = field[1:]
+        else:
+            reverse = False
+        if not hasattr(self.filter_list[0], field):
+            raise Exception('{} attribute doesn\'t exist'.format(field))
+        self.filter_list.sort(key=lambda x: getattr(x, field), reverse=reverse)
+        return self
+
+    @_tradingfilter
+    def to_list(self):          # Returns the filtered list of trades
         filter_list = self.filter_list.copy()
         self.filter_list = None
         return filter_list
+
+    @_tradingfilter
+    def first(self):
+        filter_list = self.filter_list.copy()
+        self.filter_list = None
+        return filter_list[0]
 
     def get_symbols(self):      # gets the different stocks on the trading
         symbols = []
@@ -229,7 +280,4 @@ class Trading():    # A list of trades all together
         if not weights:
             raise Exception('No objects on this query')
         return gmean(weights)
-
-    def first(self):
-        return self.trading_list[0]
 

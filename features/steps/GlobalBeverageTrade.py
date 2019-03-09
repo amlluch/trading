@@ -45,7 +45,7 @@ def step_impl(context):
 
     trade = Trade(context.stock, context.quantity, context.op, context.price)
     trading = Trading()
-    trading.add_trade(trade)
+    trading += trade
 
 
 @when("I have a group of operations with a delta timestamp from now in minutes")
@@ -68,7 +68,7 @@ def step_impl(context):
             continue
         timestamp = datetime.utcnow() + timedelta(minutes=float(raw['timestamp']))
         trade = Trade(stock, int(raw['quantity']), raw['indicator'], float(raw['price']), timestamp)
-        trading.add_trade(trade)
+        trading += trade
     context.trading = trading
 
 
@@ -84,6 +84,41 @@ def step_impl(context, symbol):
     for elem in trade:
         assert str(elem) == symbol
         cont += 1
+
+    my_stock = context.stock_list[2]
+    trading1 = Trading(context.trading.filter(symbol='TEA').to_list())
+    trading2 = trading1 + Trade(my_stock, 3, 'sell', 321.3)
+    trading3 = trading1 + context.trading.filter(symbol='GIN').to_list()
+    trading4 = trading1 + Trading(context.trading.filter(symbol='JOE').to_list())
+    trading5 = Trade(my_stock, 3, 'sell', 321.3) + trading1
+    trading6 = context.trading.filter(symbol='GIN').to_list() + trading1
+
+    print()
+    print ('Initial trading')
+    for trade in trading1.to_list():
+        print (trade.symbol)
+    print ('adding a list of trades')
+    for trade in trading3.to_list():
+        print (trade.symbol)
+    print ('adding a single Trade')
+    for trade in trading2.to_list():
+        print (trade.symbol)
+    print('adding a trading class')
+    for trade in trading4.to_list():
+        print (trade.symbol)
+    print('Reverse operation with Trade object')
+    for trade in trading5.to_list():
+        print(trade.symbol)
+    print('Reverse operation with list of Trades')
+    for trade in trading6.to_list():
+        print(trade.symbol)
+    print('Ordered by timestamp')
+    for trade in trading6.order_by().to_list():
+        print(trade.timestamp)
+    print('Ordered by timestamp reverse')
+    for trade in trading6.order_by('-timestamp').to_list():
+        print(trade.timestamp)
+    print()
 
 
 @then("get Weighted Stock Price on trades in past (?P<minutes>.+) minutes")
