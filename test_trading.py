@@ -94,10 +94,10 @@ class TestTrading(unittest.TestCase):
         filtered_trading = self.trading.before(time_before).to_list()
         self.assertEqual(len(filtered_trading), 5)
 
-        filtered_trading = self.trading.after(time_before).to_list()
+        filtered_trading = self.trading.after(time_before).order_by('-timestamp').to_list()
         self.assertEqual(len(filtered_trading), 1)
 
-        filtered_trading = self.trading.exclude(symbol='TEA').after(time_before).to_list()
+        filtered_trading = self.trading.exclude(symbol='TEA').after(time_before).order_by('timestamp').to_list()
         self.assertEqual(len(filtered_trading), 0)
 
         with self.assertRaises(Exception):

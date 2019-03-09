@@ -201,6 +201,9 @@ class Trading():    # A list of trades all together
         def add_filter_list(inst, *args, **kwargs):                 # If don't, creates it from the trading list
             if inst.filter_list is None:                            # in this case inst = self
                 inst.filter_list = inst.trading_list.copy()
+            for key in kwargs:      # checks ke arguments for filters
+                if not hasattr(inst.filter_list[0], key):
+                    raise Exception('{} attribute doesn\'t exist'.format(key))
             result = func(inst, *args, **kwargs)
             return result
         return add_filter_list
@@ -229,17 +232,16 @@ class Trading():    # A list of trades all together
 
     @_tradingfilter
     def order_by(self, field=None):
-        if not self.filter_list:
-            raise Exception('Can\'t order None type')
         if not field:
-            field = 'timestamp'    # Order by timestamp by default
+            field = 'timestamp'     # Order by timestamp by default
         if field[0:1] == '-':
             reverse = True          # Start the field by '-' for reverse sorting
             field = field[1:]
         else:
             reverse = False
-        if not hasattr(self.filter_list[0], field):
-            raise Exception('{} attribute doesn\'t exist'.format(field))
+        if self.filter_list:
+            if not (hasattr(self.filter_list[0], field)):
+                raise Exception('{} attribute doesn\'t exist'.format(field))
         self.filter_list.sort(key=lambda x: getattr(x, field), reverse=reverse)
         return self
 
@@ -271,8 +273,11 @@ class Trading():    # A list of trades all together
         matrix = np.asarray([[x.quantity, x.price] for x in stock_list], dtype=np.float32)
         prices = matrix[:,1]
         quantities = matrix[:,0]
+        total_quantities = sum(quantities)
+        if total_quantities == 0:
+            raise Exception('Divide by 0!')
 
-        return sum(np.multiply(prices, quantities)) / sum(quantities)
+        return sum(np.multiply(prices, quantities)) / total_quantities
 
     def geometric_mean(self):       # geometric mean for whole trading
         stock_symbols = self.get_symbols()
