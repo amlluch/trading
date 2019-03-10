@@ -253,9 +253,9 @@ class Trading():    # A list of trades all together
 
     @_tradingfilter
     def first(self):
-        filter_list = self.filter_list.copy()
+        first = self.filter_list[0]
         self.filter_list = None
-        return filter_list[0]
+        return first
 
     def get_symbols(self):      # gets the different stocks on the trading
         symbols = []

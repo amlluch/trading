@@ -1,6 +1,6 @@
 import unittest
 import beberagestockmarket
-from beberagestockmarket import Trading, Trade, Stock
+from beberagestockmarket import Trading
 from features.environment import preload_stocks, preload_trades
 from datetime import datetime, timedelta
 from math import isclose
@@ -16,6 +16,9 @@ class TestTrading(unittest.TestCase):
         self.trading_list = self.trading.to_list()
         self.single_stock = self.stock_list[0]
 
+        self.bad_trading_list = self.trading_list.copy()
+        self.bad_trading_list.append('bad element')
+
     @staticmethod
     def preferred_yield(price, dividend, par):
         return (dividend * par) / price
@@ -28,10 +31,8 @@ class TestTrading(unittest.TestCase):
         self.assertIsInstance(Trading(self.trading_list), Trading)
         self.assertIsInstance(Trading(), Trading)
 
-        bad_trading_list = self.trading_list.copy()
-        bad_trading_list.append('bad element')
         with self.assertRaises(Exception):
-            Trading(bad_trading_list)
+            Trading(self.bad_trading_list)
 
     def test_trading_addition(self):
         """
@@ -66,13 +67,13 @@ class TestTrading(unittest.TestCase):
 
         TRADES:
 
-        symbol,  op,   quantity,    price,timestamp
-        TEA      buy        250,   235.0 ,      -3.5
-        TEA      sell       125,   234.5 ,      -1.7
-        GIN      sell       101,   189.0 ,      -2.3
-        JOE      sell      1325,   199.0 ,      -6.4
-        GIN      buy       1897,   187.0 ,      -4
-        MIL      sell      1200,   188.0 ,      -2
+        symbol,  op,   quantity,    price, timestamp
+        TEA      buy        250     235.0       -3.5
+        TEA      sell       125     234.5       -1.7
+        GIN      sell       101     189.0       -2.3
+        JOE      sell      1325     199.0       -6.4
+        GIN      buy       1897     187.0       -4
+        MIL      sell      1200     188.0       -2
 
         """
         self.assertEqual(len(self.trading.to_list()), 6)
@@ -114,7 +115,7 @@ class TestTrading(unittest.TestCase):
         geometric_mean:  geometric mean for whole trading
         """
         antes = Trading(self.trading.after(datetime.utcnow() + timedelta(minutes=(-1) * 5)).
-                        before(datetime.utcnow()).to_list())
+                        before(datetime.utcnow()).to_list())                                # all trades last 5 minutes
         self.assertTrue(isclose(antes.weighted_price('TEA'), 234.83333, abs_tol=1e-5))
         self.assertTrue(isclose(self.trading.geometric_mean(), 201.35, abs_tol=1e-2))
 
@@ -131,17 +132,17 @@ class TestTrading(unittest.TestCase):
         | TEA       |        45 |     0.0 |
 
         """
-        # Dividend yield
-        dividend_yield = self.single_stock.dividend_yield(225)
-        target = self.single_stock.last_dividend / 225
+        # Dividend yield for a given price
+        dividend_yield = self.single_stock.dividend_yield(225)      # for single stock
+        target = self.single_stock.last_dividend / 225              # calculate manually
         self.assertEqual(dividend_yield, target)
 
-        for stock in self.stock_list:
+        for stock in self.stock_list:                               # for the whole stock list
             dividend_yield = stock.dividend_yield(225)
             target = stock.last_dividend / 225 if stock.stock_type == 'common' \
                 else self.preferred_yield(225, stock.fixed_dividend, stock.par_value)
             self.assertEqual(dividend_yield, target)
-        # Tests the PER
+        # Tests the PER for the stocks in table with previously calculated results
         prices = [225, 92, 90, 91, 45]
         results = [112.5, 4.0, 30.0, 7.0, 0.0]
         symbols = ['GIN', 'ALE', 'MOM', 'JOE', 'TEA']
