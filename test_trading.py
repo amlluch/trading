@@ -8,9 +8,13 @@ from math import isclose
 
 class TestTrading(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+
+        preload_stocks(cls)  # load self.stock_list from BDD
+        preload_trades(cls)  # load self.trading  from BDD
+
     def setUp(self):
-        preload_stocks(self)        # load self.stock_list from BDD
-        preload_trades(self)        # load self.trading  from BDD
 
         self.single_trade = self.trading.first()
         self.trading_list = self.trading.to_list()
