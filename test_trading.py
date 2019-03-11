@@ -121,8 +121,8 @@ class TestTrading(unittest.TestCase):
         """
         antes = Trading(self.trading.after(datetime.utcnow() + timedelta(minutes=(-1) * 5)).
                         before(datetime.utcnow()).to_list())                                # all trades last 5 minutes
-        self.assertTrue(isclose(antes.weighted_price('TEA'), 234.83333, abs_tol=1e-5))
-        self.assertTrue(isclose(self.trading.geometric_mean(), 201.35, abs_tol=1e-2))
+        self.assertAlmostEqual(antes.weighted_price('TEA'), 234.83333, delta=1e-5)
+        self.assertAlmostEqual(self.trading.geometric_mean(), 201.35, delta=1e-2)
 
     def test_stock(self):
         """
