@@ -96,7 +96,6 @@ class TestTrading(unittest.TestCase):
 
         time_before = datetime.utcnow() - timedelta(minutes=2)
 
-
         filtered_trading = self.trading.before(time_before).order_by('symbol').to_list()
         self.assertEqual(len(filtered_trading), 5)
         self.assertEqual(filtered_trading[0].symbol, 'GIN')
