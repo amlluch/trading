@@ -1,6 +1,6 @@
 import unittest
 import beberagestockmarket
-from beberagestockmarket import Trading
+from beberagestockmarket import Trading, Trade
 from features.environment import preload_stocks, preload_trades
 from datetime import datetime, timedelta
 from math import isclose
@@ -34,6 +34,9 @@ class TestTrading(unittest.TestCase):
         """
         self.assertIsInstance(Trading(self.trading_list), Trading)
         self.assertIsInstance(Trading(), Trading)
+        self.assertIsInstance(self.trading.filter(symbol='TEA'), Trading)
+        self.assertIsInstance(self.trading.filter(symbol='TEA').to_list(), list)
+        self.assertIsInstance(self.trading.filter(symbol='TEA').first(), Trade)
 
         with self.assertRaises(Exception):
             Trading(self.bad_trading_list)
