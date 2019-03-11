@@ -92,6 +92,7 @@ class TestTrading(unittest.TestCase):
 
         time_before = datetime.utcnow() - timedelta(minutes=2)
 
+
         filtered_trading = self.trading.before(time_before).order_by('symbol').to_list()
         self.assertEqual(len(filtered_trading), 5)
         self.assertEqual(filtered_trading[0].symbol, 'GIN')
@@ -108,6 +109,7 @@ class TestTrading(unittest.TestCase):
         with self.assertRaises(Exception):
             Trading(self.trading.filter(symbol='TEA').exclude(opa='sell').to_list())
             Trading(None.filter(symbol='TEA').to_list())
+            Trading(self.trading.filter().before('my_bad_time').to_list())
 
     def test_trading_calculations(self):
         """

@@ -4,7 +4,7 @@ import numpy as np
 from scipy.stats.mstats import gmean
 
 
-class Stock():  # This is a single stock with all info inside
+class Stock:  # This is a single stock with all info inside
 
     """
     creates a stock and includes all transactions on a given stock
@@ -80,7 +80,7 @@ class Stock():  # This is a single stock with all info inside
             return price / (self.fixed_dividend * self.par_value)
 
 
-class Trade():  # a single trade with all info needed. If timestamp is None then will get time now
+class Trade:  # a single trade with all info needed. If timestamp is None then will get time now
 
     """
     Creates a single trade.
@@ -123,7 +123,42 @@ class Trade():  # a single trade with all info needed. If timestamp is None then
         return self.stock.symbol
 
 
-class Trading():    # A list of trades all together
+class TradingFilter:
+    """
+    This class is a decorator for checking if exists a filter list.
+    If don't, creates it from the trading list
+    Checks attributes and formats.
+        clean: for cleaning up the list after applying a filter ('to_list' and 'first')
+        time : checks time format in 'before' and 'after' filters
+    """
+    def __init__(self, clean=False, time=False):
+        self.clean = clean
+        self.time = time
+
+    def __call__(self, func):
+        def wrap(inst, *args, **kwargs):
+            if inst.filter_list is None:
+                inst.filter_list = inst.trading_list.copy()
+            for key in kwargs:                                      # checks key arguments for filters
+                if not hasattr(inst.filter_list[0], key):
+                    raise Exception('{} attribute doesn\'t exist'.format(key))
+            if self.time:                                           # checks time if is a positional argument
+                try:
+                    datetime.strftime(args[0], '%Y-%m%dT%H:%M:%S.%f')
+                except Exception:
+                    raise Exception("Time stamp is not in ISO format: YYYY-MM-DDTHH:MM:SS.mmmm")
+            else:
+                pass
+
+            result = func(inst, *args, **kwargs)
+            if self.clean:                      # cleans for ending the filter (to_list and first)
+                inst.filter_list = None
+            return result
+
+        return wrap
+
+
+class Trading:    # A list of trades all together
 
     """
     A bunch of trades all together. You can create a void trading or a new one with a list of trades.
@@ -197,40 +232,29 @@ class Trading():    # A list of trades all together
                 raise Exception('All objects should be Trade type')
         self.trading_list.extend(trades)
 
-    def _tradingfilter(func):                                       # This decorator checks if exists a filter list.
-        def add_filter_list(inst, *args, **kwargs):                 # If don't, creates it from the trading list
-            if inst.filter_list is None:                            # in this case inst = self
-                inst.filter_list = inst.trading_list.copy()
-            for key in kwargs:                                      # checks key arguments for filters
-                if not hasattr(inst.filter_list[0], key):
-                    raise Exception('{} attribute doesn\'t exist'.format(key))
-            result = func(inst, *args, **kwargs)
-            return result
-        return add_filter_list
-
-    @_tradingfilter
+    @TradingFilter()
     def filter(self, **kwargs):                     # you can get all trades just passing NO parameters
         for key, value in kwargs.items():           # or filter by any trade attribute or a group of attributes
             self.filter_list = [x for x in self.filter_list if getattr(x, key) == value]
         return self
 
-    @_tradingfilter
+    @TradingFilter()
     def exclude(self, **kwargs):
         for key, value in kwargs.items():
             self.filter_list = [x for x in self.filter_list if getattr(x, key) != value]
         return self
 
-    @_tradingfilter
+    @TradingFilter(time=True)
     def before(self, time):     # all trades BEFORE a time. Needs to_list()
         self.filter_list = [x for x in self.filter_list if x.timestamp <= time]
         return self
 
-    @_tradingfilter
+    @TradingFilter(time=True)
     def after(self, time):      # all trades AFTER a time. Needs to_list()
         self.filter_list = [x for x in self.filter_list if x.timestamp >= time]
         return self
 
-    @_tradingfilter
+    @TradingFilter()
     def order_by(self, field=None):
         if not field:
             field = 'timestamp'     # Order by timestamp by default
@@ -245,17 +269,13 @@ class Trading():    # A list of trades all together
         self.filter_list.sort(key=lambda x: getattr(x, field), reverse=reverse)
         return self
 
-    @_tradingfilter
+    @TradingFilter(clean=True)
     def to_list(self):          # Returns the filtered list of trades
-        filter_list = self.filter_list.copy()
-        self.filter_list = None
-        return filter_list
+        return self.filter_list
 
-    @_tradingfilter
+    @TradingFilter(clean=True)
     def first(self):
-        first = self.filter_list[0]
-        self.filter_list = None
-        return first
+        return self.filter_list[0]
 
     def get_symbols(self):      # gets the different stocks on the trading
         symbols = []
